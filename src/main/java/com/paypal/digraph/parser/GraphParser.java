@@ -60,6 +60,7 @@ import com.paypal.digraph.parser.antlr.DOTLexer;
 import com.paypal.digraph.parser.antlr.DOTParser;
 import com.paypal.digraph.parser.antlr.DOTParser.A_listContext;
 import com.paypal.digraph.parser.antlr.DOTParser.IdContext;
+import com.paypal.digraph.parser.antlr.DOTParser.Stmt_listContext;
 
 public class GraphParser
 {
@@ -113,6 +114,7 @@ public class GraphParser
 	private class NodeListener extends DOTBaseListener
 	{
 		Map<String,Object> nodeAttrs = new TreeMap<String,Object>();
+		Subgraph sub = new Subgraph(null);
 		
 		/*@Override*/
 		public void enterGraph(@NotNull DOTParser.GraphContext ctx) {
@@ -130,9 +132,37 @@ public class GraphParser
 			GraphNode node = mNodeMap.get(nodeId);
 			if (node == null) {
 				node = new GraphNode(nodeId);
+				node.setSubgraph(sub);
 				mNodeMap.put(nodeId, node);
 			}
 			node.setAttributes(nodeAttrs);
+		}
+		
+		@Override
+		public void enterSubgraph(@NotNull DOTParser.SubgraphContext ctx) {
+			this.sub = new Subgraph(sub);
+			Stmt_listContext stmts = ctx.stmt_list();
+			for(int i = 0; i < stmts.getChildCount(); i++) {
+				ParseTree t = stmts.getChild(i);
+				if(t instanceof DOTParser.StmtContext) {
+					DOTParser.StmtContext stmtCtx = (DOTParser.StmtContext) t;
+					Token sToken = stmtCtx.getStart();
+					int stmtType = sToken.getType();
+					if(stmtType == DOTParser.ID) {
+						if(sToken.getText().trim().equalsIgnoreCase("label")) {
+							sub.setName(stmtCtx.getStop().getText().replace("\"", "").trim());
+						}
+					}
+					else if(stmtType == DOTParser.SUBGRAPH) {
+						break;
+					}
+				}
+			}
+		}
+		
+		@Override
+		public void exitSubgraph(@NotNull DOTParser.SubgraphContext ctx) {
+			this.sub = sub.getParent();
 		}
 		
 		/*@Override*/
@@ -275,6 +305,7 @@ public class GraphParser
 			return graph.toString();
 		}
 	}
+	
 
 	/*
 	 * EdgeCtx

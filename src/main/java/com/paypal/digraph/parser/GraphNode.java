@@ -33,7 +33,16 @@ package com.paypal.digraph.parser;
 
 public class GraphNode extends GraphElement
 {
+	private Subgraph sub;
 	public GraphNode(String id) {
 		super(id);
+	}
+	
+	public Subgraph getSubgraph() {
+		return this.sub;
+	}
+	
+	public void setSubgraph(Subgraph sub) {
+		this.sub = sub;
 	}
 }
